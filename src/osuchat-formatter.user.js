@@ -30,7 +30,6 @@
       pattern: /\[u\](.*?)\[\/u\]/gi,
       replace: "<u>$1</u>",
     },
-
     {
       pattern: /\[list=1\]([\s\S]*?)\[\/list\]/gi,
       replace: (match, content) => {
@@ -42,7 +41,6 @@
         return `<ol>${items}</ol>`;
       },
     },
-
     {
       pattern: /\[list\]([\s\S]*?)\[\/list\]/gi,
       replace: (match, content) => {
@@ -64,7 +62,6 @@
         return `<span style="font-size: ${size}%">${text}</span>`;
       },
     },
-
     {
       pattern: /\[c\](.*?)\[\/c\]/gi,
       replace: "<code>$1</code>",
@@ -144,6 +141,55 @@
   const containerObserver = new MutationObserver((mutations, obs) => {
     const chatContainer = document.querySelector(".chat-conversation-panel");
     if (chatContainer) {
+      const inputContainer = document.querySelector(".chat-input");
+
+      const formatterButton = document.createElement("button");
+      formatterButton.className = "btn-osu-big btn-osu-big--chat-send";
+      formatterButton.style.cssText = "margin-right:10px;";
+      formatterButton.textContent = "Formatter";
+
+      inputContainer.insertBefore(formatterButton, inputContainer.firstChild);
+
+      formatterButton.addEventListener("click", (e) => {
+        modal.style.display = "block";
+      });
+      const formatterMessage = `
+Hello everyone, this tool is still experimental, and was made in a rush as a prototype. It'll be updated later when I have time.
+btw, this tool can make your chat support BBCode!
+
+supported formats:
+[b] [i] [s] [u] [color] [audio] [img] [youtube] [url] [c] [spoiler] [size] [list]
+
+how to use?
+
+- type any supported format mentioned above in the input text (e.g [b]Hello World[/b])
+- then click send, and the sent text will be converted right away
+
+as I said, this app will be updated later. here’s what I plan to add:
+
+- a live editor (WYSIWYG) that lets you edit and format the message visually, then it'll be converted to BBCode in the input text and can be sent. this editor will be in a separate modal, not directly inside the input box
+
+- integration with existing osu! projects. idk, maybe like an osu! signature, or when someone embeds a beatmap link, it'll show a downloadable button with mirrors too
+and for god’s sake I have to stop wasting time even writing this LOL the thesis deadline is near, god help me ;w;
+
+feel free to contact me on https://osu.ppy.sh/users/8804560 if u wanna talk about this project~
+`;
+      const modal = document.createElement("div");
+      modal.style.cssText = "display:none;width:100%;height:100dvh;background-color:rgb(0 0 0 / 60%);position:fixed;top:0;z-index:9999999;";
+      modal.innerHTML = `
+        <div style="max-width:700px;margin:auto;height:400px; margin-top:30px;">
+            <textarea readonly=true class="chat-input__box" style="width:100%; height:100%">${formatterMessage}</textarea>
+</div>
+`;
+
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.style.display = "none";
+        }
+      });
+
+      document.body.appendChild(modal);
+
       observeMessagesIn(chatContainer);
       obs.disconnect();
     }
