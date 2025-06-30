@@ -23,8 +23,55 @@
       replace: "<em>$1</em>",
     },
     {
+      pattern: /\[s\](.*?)\[\/s\]/gi,
+      replace: "<del>$1</del>",
+    },
+    {
       pattern: /\[u\](.*?)\[\/u\]/gi,
       replace: "<u>$1</u>",
+    },
+
+    {
+      pattern: /\[list=1\]([\s\S]*?)\[\/list\]/gi,
+      replace: (match, content) => {
+        const items = content
+          .split(/\[\*\]/)
+          .filter((item) => item.trim())
+          .map((item) => `<li>${item.trim()}</li>`)
+          .join("");
+        return `<ol>${items}</ol>`;
+      },
+    },
+
+    {
+      pattern: /\[list\]([\s\S]*?)\[\/list\]/gi,
+      replace: (match, content) => {
+        const items = content
+          .split(/\[\*\]/)
+          .filter((item) => item.trim())
+          .map((item) => `<li>${item.trim()}</li>`)
+          .join("");
+        return `<ul>${items}</ul>`;
+      },
+    },
+    {
+      pattern: /\[audio\](.*?)\[\/audio\]/gi,
+      replace: "<audio src='$1'></audio>",
+    },
+    {
+      pattern: /\[size=(\d+)\](.*?)\[\/size\]/gi,
+      replace: (match, size, text) => {
+        return `<span style="font-size: ${size}%">${text}</span>`;
+      },
+    },
+
+    {
+      pattern: /\[c\](.*?)\[\/c\]/gi,
+      replace: "<code>$1</code>",
+    },
+    {
+      pattern: /\[url=(.*?)\](.*?)\[\/url\]/gi,
+      replace: '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>',
     },
     {
       pattern: /\[img\](.*?)\[\/img\]/gi,
