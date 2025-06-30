@@ -28,7 +28,7 @@
     },
     {
       pattern: /\[img\](.*?)\[\/img\]/gi,
-      replace: '<img src="$1" alt="Image">',
+      replace: '<div style="text-align:center;"><img src="$1" alt="Image"></div>',
     },
     {
       pattern: /\[color=(#[0-9a-f]{3,6}|[a-z]+)\](.*?)\[\/color\]/gi,
