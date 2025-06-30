@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         osuChat Formatter
 // @namespace    https://github.com/rezzvy/osuchat-formatter
-// @version      1.0
+// @version      1.1
 // @description  Adds BBCode support like [b], [i], [img], [color], [spoiler], [youtube], and more~ for osu!web chat!
 // @author       Rezzvy
 // @match        *://osu.ppy.sh/*
@@ -13,147 +13,125 @@
 (function () {
   "use strict";
 
+  // BBCode conversion rules list!
   const bbcodeRules = [
-    {
-      pattern: /\[b\](.*?)\[\/b\]/gi,
-      replace: "<strong>$1</strong>",
-    },
-    {
-      pattern: /\[i\](.*?)\[\/i\]/gi,
-      replace: "<em>$1</em>",
-    },
-    {
-      pattern: /\[s\](.*?)\[\/s\]/gi,
-      replace: "<del>$1</del>",
-    },
-    {
-      pattern: /\[u\](.*?)\[\/u\]/gi,
-      replace: "<u>$1</u>",
-    },
+    // Basic text styling
+    { pattern: /\[b\](.*?)\[\/b\]/gi, replace: "<strong>$1</strong>" },
+    { pattern: /\[i\](.*?)\[\/i\]/gi, replace: "<em>$1</em>" },
+    { pattern: /\[s\](.*?)\[\/s\]/gi, replace: "<del>$1</del>" },
+    { pattern: /\[u\](.*?)\[\/u\]/gi, replace: "<u>$1</u>" },
+
+    // Ordered list [list=1]
     {
       pattern: /\[list=1\]([\s\S]*?)\[\/list\]/gi,
-      replace: (match, content) => {
-        const items = content
+      replace: (match, content) =>
+        `<ol>${content
           .split(/\[\*\]/)
-          .filter((item) => item.trim())
-          .map((item) => `<li>${item.trim()}</li>`)
-          .join("");
-        return `<ol>${items}</ol>`;
-      },
+          .filter((i) => i.trim())
+          .map((i) => `<li>${i.trim()}</li>`)
+          .join("")}</ol>`,
     },
+    // Unordered list [list]
     {
       pattern: /\[list\]([\s\S]*?)\[\/list\]/gi,
-      replace: (match, content) => {
-        const items = content
+      replace: (match, content) =>
+        `<ul>${content
           .split(/\[\*\]/)
-          .filter((item) => item.trim())
-          .map((item) => `<li>${item.trim()}</li>`)
-          .join("");
-        return `<ul>${items}</ul>`;
-      },
+          .filter((i) => i.trim())
+          .map((i) => `<li>${i.trim()}</li>`)
+          .join("")}</ul>`,
     },
-    {
-      pattern: /\[audio\](.*?)\[\/audio\]/gi,
-      replace: "<audio src='$1'></audio>",
-    },
+
+    // Audio player
+    { pattern: /\[audio\](.*?)\[\/audio\]/gi, replace: "<audio src='$1'></audio>" },
+
+    // Text size (as percentage)
     {
       pattern: /\[size=(\d+)\](.*?)\[\/size\]/gi,
-      replace: (match, size, text) => {
-        return `<span style="font-size: ${size}%">${text}</span>`;
-      },
+      replace: (match, size, text) => `<span style="font-size: ${size}%">${text}</span>`,
     },
-    {
-      pattern: /\[c\](.*?)\[\/c\]/gi,
-      replace: "<code>$1</code>",
-    },
+
+    // Code block
+    { pattern: /\[c\](.*?)\[\/c\]/gi, replace: "<code>$1</code>" },
+
+    // Link with anchor
     {
       pattern: /\[url=(.*?)\](.*?)\[\/url\]/gi,
       replace: '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>',
     },
+
+    // Centered image
     {
       pattern: /\[img\](.*?)\[\/img\]/gi,
       replace: '<div style="text-align:center;"><img src="$1" alt="Image"></div>',
     },
+
+    // Colored text
     {
       pattern: /\[color=(#[0-9a-f]{3,6}|[a-z]+)\](.*?)\[\/color\]/gi,
-      replace: (match, color, text) => {
-        return `<span style="color:${color}">${text}</span>`;
-      },
+      replace: (match, color, text) => `<span style="color:${color}">${text}</span>`,
     },
+
+    // Spoiler block (reveals text on click)
     {
       pattern: /\[spoiler\](.*?)\[\/spoiler\]/gi,
-      replace: (match, text) => {
-        return `<span style="background-color: #000 !important; color: #000 !important; cursor: pointer;" onclick="this.style.color='inherit'">${text}</span>`;
-      },
+      replace: (match, text) =>
+        `<span style="background-color: #000 !important; color: #000 !important; cursor: pointer;" onclick="this.style.color='inherit'">${text}</span>`,
     },
+
+    // YouTube embed
     {
       pattern: /\[youtube\](.*?)\[\/youtube\]/gi,
       replace: (match, id) => {
         const cleanId = id.trim().split("v=")[1] || id.trim();
-        return `
-          <iframe
-            width="320"
-            height="180"
-            src="https://www.youtube.com/embed/${cleanId}"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          ></iframe>`;
+        return `<iframe width="320" height="180" src="https://www.youtube.com/embed/${cleanId}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
       },
     },
   ];
 
+  // Converts a paragraph's textContent with BBCode to HTML
   function convertBBCode(p) {
-    if (p.dataset.converted === "true") return;
-
+    if (p.dataset.converted === "true") return; // Avoid double conversion
     let html = p.textContent;
     bbcodeRules.forEach((rule) => {
       html = html.replace(rule.pattern, rule.replace);
     });
-
     p.innerHTML = html;
     p.dataset.converted = "true";
   }
 
+  // Apply formatter to all existing messages in container
   function applyToAllExisting(container) {
     container.querySelectorAll("p").forEach(convertBBCode);
   }
 
-  function observeMessagesIn(osuMdContainer) {
+  // Observe for new messages in chat panel and convert them
+  function observeMessagesIn(chatContainer) {
     const msgObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            if (node.matches("p")) {
-              convertBBCode(node);
-            } else {
-              node.querySelectorAll?.("p")?.forEach(convertBBCode);
-            }
+            if (node.matches("p")) convertBBCode(node);
+            else node.querySelectorAll?.("p")?.forEach(convertBBCode);
           }
         }
       }
     });
-
-    msgObserver.observe(osuMdContainer, { childList: true, subtree: true });
-    applyToAllExisting(osuMdContainer);
+    msgObserver.observe(chatContainer, { childList: true, subtree: true });
+    applyToAllExisting(chatContainer);
   }
 
-  const containerObserver = new MutationObserver((mutations, obs) => {
-    const chatContainer = document.querySelector(".chat-conversation-panel");
-    if (chatContainer) {
-      const inputContainer = document.querySelector(".chat-input");
+  // Inject "Formatter" button with usage instructions
+  function injectFormatterButton() {
+    const inputContainer = document.querySelector(".chat-input");
+    if (!inputContainer || inputContainer.querySelector(".formatter-btn")) return;
 
-      const formatterButton = document.createElement("button");
-      formatterButton.className = "btn-osu-big btn-osu-big--chat-send";
-      formatterButton.style.cssText = "margin-right:10px;";
-      formatterButton.textContent = "Formatter";
+    const button = document.createElement("button");
+    button.className = "btn-osu-big btn-osu-big--chat-send formatter-btn";
+    button.style.cssText = "margin-right:10px;";
+    button.textContent = "Formatter";
 
-      inputContainer.insertBefore(formatterButton, inputContainer.firstChild);
-
-      formatterButton.addEventListener("click", (e) => {
-        modal.style.display = "block";
-      });
-      const formatterMessage = `
+    const message = `
 Hello everyone, this tool is still experimental, and was made in a rush as a prototype. It'll be updated later when I have time.
 btw, this tool can make your chat support BBCode!
 
@@ -174,29 +152,60 @@ and for god’s sake I have to stop wasting time even writing this LOL the thesi
 
 feel free to contact me on https://osu.ppy.sh/users/8804560 if u wanna talk about this project~
 `;
-      const modal = document.createElement("div");
-      modal.style.cssText = "display:none;width:100%;height:100dvh;background-color:rgb(0 0 0 / 60%);position:fixed;top:0;z-index:9999999;";
-      modal.innerHTML = `
-        <div style="max-width:700px;margin:auto;height:400px; margin-top:30px;">
-            <textarea readonly=true class="chat-input__box" style="width:100%; height:100%">${formatterMessage}</textarea>
-</div>
-`;
 
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) {
-          modal.style.display = "none";
-        }
+    // Modal pop-up for message
+    const modal = document.createElement("div");
+    modal.style.cssText = "display:none;width:100%;height:100dvh;background-color:rgb(0 0 0 / 60%);position:fixed;top:0;z-index:9999999;";
+    modal.innerHTML = `
+      <div style="max-width:700px;margin:auto;height:400px;margin-top:30px;">
+        <textarea readonly class="chat-input__box" style="width:100%; height:100%">${message}</textarea>
+      </div>
+    `;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    });
+
+    button.addEventListener("click", () => {
+      modal.style.display = "block";
+    });
+
+    inputContainer.insertBefore(button, inputContainer.firstChild);
+    document.body.appendChild(modal);
+  }
+
+  // Main initializer - activates formatter on chat page
+  function initChatFormatter() {
+    if (!location.pathname.startsWith("/community/chat")) return;
+
+    const tryInit = () => {
+      const chatContainer = document.querySelector(".chat-conversation-panel");
+      if (chatContainer) {
+        observeMessagesIn(chatContainer);
+        injectFormatterButton();
+        return true;
+      }
+      return false;
+    };
+
+    // If chat not ready yet, wait for it using MutationObserver
+    if (!tryInit()) {
+      const containerObserver = new MutationObserver((mutations, obs) => {
+        if (tryInit()) obs.disconnect();
       });
-
-      document.body.appendChild(modal);
-
-      observeMessagesIn(chatContainer);
-      obs.disconnect();
+      containerObserver.observe(document.body, { childList: true, subtree: true });
     }
+  }
+
+  // SPA detection using pushState and popstate
+  const originalPushState = history.pushState;
+  history.pushState = function (...args) {
+    originalPushState.apply(this, args);
+    setTimeout(initChatFormatter, 100);
+  };
+  window.addEventListener("popstate", () => {
+    setTimeout(initChatFormatter, 100);
   });
 
-  containerObserver.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
+  // Run once on initial page load
+  initChatFormatter();
 })();
