@@ -82,9 +82,21 @@
     // YouTube embed
     {
       pattern: /\[youtube\](.*?)\[\/youtube\]/gi,
-      replace: (match, id) => {
-        const cleanId = id.trim().split("v=")[1] || id.trim();
-        return `<iframe width="320" height="180" src="https://www.youtube.com/embed/${cleanId}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      replace: (match, content) => {
+        const urlRegex =
+          /(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=|shorts\/)([a-zA-Z0-9_-]{11}))|https?:\/\/(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})/;
+        const matchUrl = content.match(urlRegex);
+        let videoId = null;
+
+        if (matchUrl) {
+          videoId = matchUrl[1] || matchUrl[2];
+        } else if (/^[a-zA-Z0-9_-]{11}$/.test(content.trim())) {
+          videoId = content.trim();
+        }
+
+        if (!videoId) return match; // fallback if nothing matched
+
+        return `<iframe width="320" height="180" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
       },
     },
   ];
