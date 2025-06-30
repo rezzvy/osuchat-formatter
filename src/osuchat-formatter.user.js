@@ -4,7 +4,7 @@
 // @version      1.0
 // @description  Adds BBCode support like [b], [i], [img], [color], [spoiler], [youtube], and more~ for osu!web chat!
 // @author       Rezzvy
-// @match        *://osu.ppy.sh/community/chat*
+// @match        *://osu.ppy.sh/*
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/rezzvy/osuchat-formatter/main/src/osuchat-formatter.user.js
 // @updateURL    https://raw.githubusercontent.com/rezzvy/osuchat-formatter/main/src/osuchat-formatter.user.js
